@@ -1,16 +1,16 @@
 const detox = require('detox');
 const config = require('../package.json').detox;
 const adapter = require('detox/runners/jest/adapter');
+const workerAssignReporter = require('detox/runners/jest/assignReporter');
 const specReporter = require('detox/runners/jest/specReporter');
 
 // Set the default timeout
 jest.setTimeout(300000);
 
-jasmine.getEnv().addReporter(adapter);
-
-// This takes care of generating status logs on a per-spec basis. By default, jest only reports at file-level.
-// This is strictly optional.
-jasmine.getEnv().addReporter(specReporter);
+const testEventListeners = global.circusEnv().testEventListeners;
+testEventListeners.addListener(adapter);
+testEventListeners.addListener(workerAssignReporter);
+testEventListeners.addListener(specReporter);
 
 beforeAll(async () => {
   await detox.init(config);
@@ -23,4 +23,8 @@ beforeEach(async () => {
 afterAll(async () => {
   await adapter.afterAll();
   await detox.cleanup();
+});
+
+process.on('unhandledRejection', (reason, p) => {
+  console.log('Unhandled Rejection at: Promise', p, 'reason:', reason);
 });
